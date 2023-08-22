@@ -1,13 +1,13 @@
 # -------- IMPORTS -------------
 import json
-import pandas as pd
 
-from PIL import Image
+from loguru import logger
 from fastapi import FastAPI, File, status
 from fastapi.responses import RedirectResponse
-from ultralytics import YOLO
+
 
 from main import get_img_from_bytes
+from main import detect_sample_model
 
 # --------- LOGGER ---------------
 
@@ -64,26 +64,6 @@ def perform_healthcheck():
 # --------- SUPPORT FUNCTION ---------------
 
 
-def get_model_predict(
-    model: YOLO,
-    input_image: Image,
-    save: bool = False,
-    image_size: int = 1248,
-    conf: float = 0.5,
-    augment: bool = False,
-) -> pd.DataFrame:
-    
-    """
-    Get the predictions of a model on an input image.
-
-    Args:
-        model(YOLO) - The trained YOLO model.
-        input_image(Image) - The image on which the model will make predictions.
-
-    """
-    pass
-
-
 # --------- MAIN FUNCTION ------------------
 
 
@@ -103,3 +83,15 @@ def img_object_detection_to_json(file: bytes = File(...)):
     input_image = get_img_from_bytes(file)
 
     # Predict from model
+    predict = detect_sample_model(input_image)
+
+    # Select detect obj return info
+    detect_res = predict[["name", "confidence"]]
+    objects = detect_res["name"].values
+
+    result["detect_objects_names"] = ", ".join(objects)
+    result["detect_objects"] = json.loads(detect_res.to_json(orient="records"))
+
+    # Logs and return
+    logger.info("results: {}", result)
+    return result
