@@ -1,15 +1,30 @@
 # -------- IMPORTS -------------
 import json
+import sys
 
 from loguru import logger
 from fastapi import FastAPI, File, status
-from fastapi.responses import RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse, StreamingResponse
 
 
-from main import get_img_from_bytes
-from main import detect_sample_model
+from main import (
+    get_img_from_bytes,
+    detect_sample_model,
+    add_bboxs_on_img,
+    get_bytes_from_image,
+)
 
 # --------- LOGGER ---------------
+
+logger.remove()
+logger.add(
+    sys.stderr,
+    colorize=True,
+    format="<green>{time:HH:mm:ss}</green> | <level>{message}</level>",
+    level=10,
+)
+logger.add("log.log", rotation="1 MB", level="DEBUG", compression="zip")
 
 
 # ---------FASTAPI SETUP ---------
@@ -20,6 +35,14 @@ app = FastAPI(
 )
 
 origins = ["http://localhost", "http://localhost:8008", "*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.on_event("startup")
@@ -41,8 +64,6 @@ def save_openapi_json():
 
 # Redirect to Swagger docs
 app.get("/", include_in_schema=False)
-
-
 async def redirect():
     return RedirectResponse("/docs")
 
@@ -59,9 +80,6 @@ def perform_healthcheck():
     }
     """
     return {"healthcheck": "Everything OK!"}
-
-
-# --------- SUPPORT FUNCTION ---------------
 
 
 # --------- MAIN FUNCTION ------------------
@@ -95,3 +113,30 @@ def img_object_detection_to_json(file: bytes = File(...)):
     # Logs and return
     logger.info("results: {}", result)
     return result
+
+
+@app.post("/img_obj_detection_to_img")
+def img_object_detection_to_img(file: bytes = File(...)):
+    """
+    Object detection from an image, plot bbox on image
+
+    Args:
+        file (bytes) - The image file in bytes format
+    Returns:
+        Image - Image in bytes with bbox annotations
+    """
+
+    # Get image from bytes
+    input_image = get_img_from_bytes(file)
+
+    # Model predict
+    predict = detect_sample_model(input_image)
+
+    # Add bbox on image
+    final_image = add_bboxs_on_img(image=input_image, predict=predict)
+
+    # Return image in bytes format
+    return StreamingResponse(
+        content=get_bytes_from_image(final_image), media_type="image/jpeg"
+    )
+
