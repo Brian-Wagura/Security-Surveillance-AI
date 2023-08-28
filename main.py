@@ -47,6 +47,7 @@ def get_bytes_from_image(image: Image) -> bytes:
     return return_image
 
 
+
 def transform_predict_to_df(results: list, labels_dict: dict) -> pd.DataFrame:
     """
     Transform prediction from yolov8 (torch.Tensor) to pandas DataFrame
@@ -87,7 +88,6 @@ def get_model_predict(
     conf: float = 0.5,
     augment: bool = False,
 ) -> pd.DataFrame:
-    
     """
     Get the predictions of a model on an input image.
 
@@ -98,7 +98,7 @@ def get_model_predict(
         image_size (int,optional) - The size of the image the model will receive. Defaults to 1248.
         conf (float, optional) - The confidence threshold for the predictions. Defaults to 0.5.
         augment (bool, optional) - Whether to apply data augmentation on the input image. Defaults to false.
-    
+
     Returns:
         pd.DataFrame: A dataframe containing the predictions.
 
@@ -121,9 +121,12 @@ def get_model_predict(
 
     return predictions
 
+
+
 #  ------------ BBOX FUNCTION ------------
 
-def add_bboxs_on_img(image:Image, predict: pd.DataFrame()) -> Image:
+
+def add_bboxs_on_img(image: Image, predict: pd.DataFrame()) -> Image:
     """
     Add a bounding box on the Image.
 
@@ -139,19 +142,18 @@ def add_bboxs_on_img(image:Image, predict: pd.DataFrame()) -> Image:
     annotator = Annotator(np.array(image))
 
     # Sort predict by xmin value
-    predict = predict.sort_values(by=['xmin'], ascending=True)
+    predict = predict.sort_values(by=["xmin"], ascending=True)
 
     # Iterate over the rows of predict df
     for i, row in predict.iterrows():
-
         # Text to be displayed on the image.
-        text=f"{row['name']}: {int(row['confidence']*100)}%"
+        text = f"{row['name']}: {int(row['confidence']*100)}%"
 
         # Bounding box coordinates
-        bbox = [row['xmin'], row['ymin'], row['xmax'], row['ymax']]
+        bbox = [row["xmin"], row["ymin"], row["xmax"], row["ymax"]]
 
         # Add bbox and text on the image
-        annotator.box_label(bbox,text,color=colors(row['class'], True))
+        annotator.box_label(bbox, text, color=colors(row["class"], True))
 
     # COnvert the annotated image to PIL image
     return Image.fromarray(annotator.result())
