@@ -12,7 +12,7 @@ from PIL import Image
 # Initialize the model
 model_sample = YOLO("./models/yolov8m.pt")
 
-# -------------------------------------
+# ------------ MAIN FUNCTIONS --------------------
 
 
 def get_img_from_bytes(binary_img: bytes) -> Image:
@@ -27,35 +27,14 @@ def get_img_from_bytes(binary_img: bytes) -> Image:
     return input_image
 
 
-def get_bytes_from_image(image: Image) -> bytes:
-    """
-    Convert PIL image to bytes
-
-    Args: image(Image) - A PIL image instance
-    Returns: bytes - BytesIO object that contains the image in JPEG format
-            with quality 85
-    """
-
-    return_image = io.BytesIO()
-
-    # Save the image in JPEG format with quality 85
-    image.save(return_image, format="JPEG", quality=85)
-
-    # Set the pointer to the beginning of the file
-    return_image.seek(0)
-
-    return return_image
-
-
-
 def transform_predict_to_df(results: list, labels_dict: dict) -> pd.DataFrame:
     """
     Transform prediction from yolov8 (torch.Tensor) to pandas DataFrame
 
-    Args: results(list) - A list containing the predict output from yolov8 in the
-                        form of a torch.Tensor
+    Args: results(list) - A list containing the predict output from yolov8
+          in the form of a torch.Tensor
           labels_dict(dict) -  A dictionary containing the labels names, where the
-                 keys are the class ids and the values are the label names.
+          keys are the class ids and the values are the label names.
 
     Returns: predict_bbox (pd.DataFrame) - A DataFrame containing the bounding box
                     coordinates, confidence scores and class labels.
@@ -122,7 +101,6 @@ def get_model_predict(
     return predictions
 
 
-
 #  ------------ BBOX FUNCTION ------------
 
 
@@ -155,11 +133,11 @@ def add_bboxs_on_img(image: Image, predict: pd.DataFrame()) -> Image:
         # Add bbox and text on the image
         annotator.box_label(bbox, text, color=colors(row["class"], True))
 
-    # COnvert the annotated image to PIL image
+    # Convert the annotated image to PIL image
     return Image.fromarray(annotator.result())
 
 
-#  --------------- MODELS -----------------
+#  --------------- MODEL -----------------
 
 
 def detect_sample_model(input_image: Image) -> pd.DataFrame:
@@ -174,10 +152,9 @@ def detect_sample_model(input_image: Image) -> pd.DataFrame:
     predict = get_model_predict(
         model=model_sample,
         input_image=input_image,
-        save=False,
+        save=True,
         image_size=640,
         augment=False,
         conf=0.5,
     )
-
     return predict

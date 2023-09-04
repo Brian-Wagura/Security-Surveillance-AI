@@ -1,19 +1,17 @@
 # -------- IMPORTS -------------
+import os
 import json
 import sys
-import io
-import cv2
 
 from loguru import logger
-from fastapi import FastAPI, File, UploadFile, status
+from fastapi import FastAPI, File, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse, StreamingResponse
+from fastapi.responses import RedirectResponse
 
 from main import (
     get_img_from_bytes,
     detect_sample_model,
     add_bboxs_on_img,
-    get_bytes_from_image,
 )
 
 # --------- LOGGER ---------------
@@ -32,7 +30,7 @@ logger.add("log.log", rotation="1 MB", level="DEBUG", compression="zip")
 app = FastAPI(
     title="Object Detection with FastAPI",
     description="Obtain object value out of image \
-        and return image and JSON response.",
+        and return JSON response and image result.",
 )
 
 origins = ["http://localhost", "http://localhost:8008", "*"]
@@ -83,7 +81,7 @@ async def perform_healthcheck():
     return {"healthcheck": "Everything OK!"}
 
 
-# --------- MAIN FUNCTION ------------------
+# --------- MAIN ROUTES ------------------
 
 
 @app.post("/img_obj_detection_to_json")
@@ -116,34 +114,8 @@ async def img_object_detection_to_json(file: bytes = File(...)):
     return result
 
 
-# @app.post("/img_obj_detection_to_img")
-# async def img_object_detection_to_img(file: bytes = File(...)):
-#     """
-#     Object detection from an image, plot bbox on image
-
-#     Args:
-#         file (bytes) - The image file in bytes format
-#     Returns:
-#         Image - Image in bytes with bbox annotations
-#     """
-
-#     # Get image from bytes
-#     input_image = get_img_from_bytes(file)
-
-#     # Model predict
-#     predict = detect_sample_model(input_image)
-
-#     # Add bbox on image
-#     final_image = add_bboxs_on_img(image=input_image, predict=predict)
-
-#     # Return image in bytes format
-#     return StreamingResponse(
-#         content=get_bytes_from_image(final_image), media_type="image/jpeg"
-#     )
-
-
 @app.post("/img_obj_detection_to_img")
-async def img_object_detection_to_img(file: UploadFile = File(...)):
+async def img_object_detection_to_img(file: bytes = File(...)):
     """
     Object detection from an image, plot bbox on image
 
@@ -153,10 +125,8 @@ async def img_object_detection_to_img(file: UploadFile = File(...)):
         Image - Image in bytes with bbox annotations
     """
 
-    image_bytes = await file.read()
-
     # Get image from bytes
-    input_image = get_img_from_bytes(image_bytes)
+    input_image = get_img_from_bytes(file)
 
     # Model predict
     predict = detect_sample_model(input_image)
@@ -164,13 +134,4 @@ async def img_object_detection_to_img(file: UploadFile = File(...)):
     # Add bbox on image
     final_image = add_bboxs_on_img(image=input_image, predict=predict)
 
-    output_path = "annotated_image.jpg"
-    final_image.save(output_path, format="JPEG")
-
-    return {"msg":"Annotated Image saved succcessfully"}
-
-
-@app.post("/video_obj_detection_to_video")
-async def video_object_detection_to_video(file: UploadFile):
-    """ """
-    pass
+    return final_image
