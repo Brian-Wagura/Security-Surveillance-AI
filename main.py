@@ -10,7 +10,7 @@ from PIL import Image
 # ------------ YOLO Model -----------------
 
 # Initialize the model
-model_sample = YOLO("./models/yolov8m.pt")
+model = YOLO("./models/yolov8m.pt")
 
 # ------------ MAIN FUNCTIONS --------------------
 
@@ -101,48 +101,12 @@ def get_model_predict(
     return predictions
 
 
-#  ------------ BBOX FUNCTION ------------
-
-
-def add_bboxs_on_img(image: Image, predict: pd.DataFrame()) -> Image:
-    """
-    Add a bounding box on the Image.
-
-    Args:
-        image(Image) - input image
-        predict(dataframe) - predict from model
-
-    Returns:
-        Image - image with bbox
-    """
-
-    # Annotator object
-    annotator = Annotator(np.array(image))
-
-    # Sort predict by xmin value
-    predict = predict.sort_values(by=["xmin"], ascending=True)
-
-    # Iterate over the rows of predict df
-    for i, row in predict.iterrows():
-        # Text to be displayed on the image.
-        text = f"{row['name']}: {int(row['confidence']*100)}%"
-
-        # Bounding box coordinates
-        bbox = [row["xmin"], row["ymin"], row["xmax"], row["ymax"]]
-
-        # Add bbox and text on the image
-        annotator.box_label(bbox, text, color=colors(row["class"], True))
-
-    # Convert the annotated image to PIL image
-    return Image.fromarray(annotator.result())
-
-
 #  --------------- MODEL -----------------
 
 
-def detect_sample_model(input_image: Image) -> pd.DataFrame:
+def model_detect(input_image: Image) -> pd.DataFrame:
     """
-    Predict from sample_model
+    Predict from model
     Based on Yolov8
 
     Args: input_image (Image) - the input image
@@ -150,11 +114,12 @@ def detect_sample_model(input_image: Image) -> pd.DataFrame:
     """
 
     predict = get_model_predict(
-        model=model_sample,
+        model=model,
         input_image=input_image,
         save=True,
         image_size=640,
         augment=False,
         conf=0.5,
     )
+
     return predict

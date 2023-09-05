@@ -1,17 +1,15 @@
 # -------- IMPORTS -------------
-import os
 import json
 import sys
 
 from loguru import logger
-from fastapi import FastAPI, File, status
+from fastapi import FastAPI, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
 from main import (
     get_img_from_bytes,
-    detect_sample_model,
-    add_bboxs_on_img,
+    model_detect,
 )
 
 # --------- LOGGER ---------------
@@ -44,41 +42,10 @@ app.add_middleware(
 )
 
 
-@app.on_event("startup")
-async def save_openapi_json():
-    """
-    This function is used to save the OpenAPI documentation
-    data of the FastAPI application to a JSON file.
-    The purpose of saving the OpenAPI documentation data is to have
-    a permanent and offline record of the API specification,
-    which can be used for documentation purposes or
-    to generate client libraries
-    """
-
-    openapi_data = app.openapi()
-
-    with open("openapi.json", "w") as doc_file:
-        json.dump(openapi_data, doc_file)
-
-
 # Redirect to Swagger docs
 @app.get("/", include_in_schema=False)
 async def redirect():
     return RedirectResponse("/docs")
-
-
-@app.get("/healthcheck", status_code=status.HTTP_200_OK)
-async def perform_healthcheck():
-    """
-    Sends a GET request to the route & hopes to get a "200"
-    response code.  It acts as a last line of defense in
-    case something goes south. Additionally, it also
-    returns a JSON response in the form of:
-    {
-        'healthcheck': 'Everything OK!'
-    }
-    """
-    return {"healthcheck": "Everything OK!"}
 
 
 # --------- MAIN ROUTES ------------------
@@ -100,7 +67,7 @@ async def img_object_detection_to_json(file: bytes = File(...)):
     input_image = get_img_from_bytes(file)
 
     # Predict from model
-    predict = detect_sample_model(input_image)
+    predict = model_detect(input_image)
 
     # Select detect obj return info
     detect_res = predict[["name", "confidence"]]
@@ -122,16 +89,13 @@ async def img_object_detection_to_img(file: bytes = File(...)):
     Args:
         file (bytes) - The image file in bytes format
     Returns:
-        Image - Image in bytes with bbox annotations
+        A success JSON reponse displaying image object detection successful.
     """
 
     # Get image from bytes
     input_image = get_img_from_bytes(file)
 
     # Model predict
-    predict = detect_sample_model(input_image)
+    predict = model_detect(input_image)
 
-    # Add bbox on image
-    final_image = add_bboxs_on_img(image=input_image, predict=predict)
-
-    return final_image
+    return {"Success!": "Image object detection successful."}
