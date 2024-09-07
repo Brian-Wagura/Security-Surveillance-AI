@@ -31,7 +31,7 @@ app = FastAPI(
         and return JSON response and image result.",
 )
 
-origins = ["http://localhost", "http://localhost:8008", "*"]
+origins = ["http://localhost", "http://localhost:8000", "*"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -51,7 +51,7 @@ async def redirect():
 # --------- MAIN ROUTES ------------------
 
 
-@app.post("/img_obj_detection_to_json")
+@app.post("/img_obj_detection")
 async def img_object_detection_to_json(file: bytes = File(...)):
     """
     Object detection from an Image.
@@ -81,21 +81,3 @@ async def img_object_detection_to_json(file: bytes = File(...)):
     return result
 
 
-@app.post("/img_obj_detection_to_img")
-async def img_object_detection_to_img(file: bytes = File(...)):
-    """
-    Object detection from an image, plot bbox on image
-
-    Args:
-        file (bytes) - The image file in bytes format
-    Returns:
-        A success JSON reponse displaying image object detection successful.
-    """
-
-    # Get image from bytes
-    input_image = get_img_from_bytes(file)
-
-    # Model predict
-    predict = model_detect(input_image)
-
-    return {"Success!": "Image object detection successful."}

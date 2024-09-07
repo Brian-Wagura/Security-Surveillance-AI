@@ -26,7 +26,7 @@ def save_uploaded_image(image_file):
 def display_results_json(image_path):
     try:
         response = requests.post(
-            "http://localhost:8008/img_obj_detection_to_json",
+            "http://localhost:8000/img_obj_detection",
             files={"file": open(image_path, "rb")},
         )
         result = response.json()
@@ -57,12 +57,8 @@ def find_latest_prediction_folder(base_directory):
         return None
 
 
-def display_results_image(image_path):
+def display_results_image():
     try:
-        requests.post(
-            "http://localhost:8008/img_obj_detection_to_img",
-            files={"file": open(image_path, "rb")},
-        )
         st.subheader("Predicted Image")
         latest_prediction_folder = find_latest_prediction_folder(base_directory)
 
@@ -96,7 +92,7 @@ def streamlit_frontend():
         display_results_json(image_path)
 
         # Display the image with the predicted objects
-        display_results_image(image_path)
+        display_results_image()
 
 
 if __name__ == "__main__":
